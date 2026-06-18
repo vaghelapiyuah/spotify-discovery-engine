@@ -1,9 +1,9 @@
-"""Generate a number-based 1920x1080 PDF deck from the live review analysis.
+"""Generate a number-based 1920x1080 single-slide PDF from the live analysis.
 
 Recomputes the figures from all collected data (App Store + Play Store), then
-renders slides. All on-slide text is >= 26pt (Figma 1920x1080 constraint).
+renders ONE slide. All on-slide text is >= 26pt (Figma 1920x1080 constraint).
 
-Run:  python make_slides.py   ->  output/Spotify_Discovery_Insights.pdf
+Run:  python make_slides.py   ->  slides/Spotify_Discovery_Insights.pdf
 """
 
 from __future__ import annotations
@@ -75,7 +75,6 @@ def figures() -> dict:
     ]
     return {
         "n": len(analyzed), "nD": nD, "src": dict(src),
-        "bug": dash["totals"]["app_bug_reviews"],
         "pos": round(100 * sent["positive"] / len(analyzed), 1),
         "neg": round(100 * sent["negative"] / len(analyzed), 1),
         "themes": themes,
@@ -95,142 +94,96 @@ def text(c, x, y, s, size, color=WHITE, bold=False, center=False, right=False):
         c.drawString(x, y, s)
 
 
-def page_bg(c):
-    c.setFillColor(BG)
-    c.rect(0, 0, W, H, fill=1, stroke=0)
-    c.setFillColor(GREEN)
-    c.rect(0, H - 14, W, 14, fill=1, stroke=0)
-
-
-def footer(c, label):
-    text(c, 80, 46, label, 26, GRAY)
-    text(c, W - 80, 46, APP_URL, 26, GREEN, right=True)
-
-
-# --- slide 1: themes -------------------------------------------------------- #
-def slide_themes(c, F):
-    page_bg(c)
-    text(c, 80, H - 130, "Users want freshness — without losing familiarity", 62, WHITE, bold=True)
-    text(c, 80, H - 185,
-         f"Analysis of {F['n']} real Spotify reviews "
-         f"(App Store {F['src'].get('app_store',0)} · Play Store {F['src'].get('play_store',0)})",
-         30, GRAY)
-
-    # KPI strip
-    kpis = [(f"{F['pos']}%", "positive sentiment"),
-            (f"{F['neg']}%", "negative sentiment"),
-            ("10.1%", "say recs are 'bad' (#1)"),
-            ("108", "P0 opportunity score")]
-    kx, kw, kg = 80, 420, 20
-    for i, (big, small) in enumerate(kpis):
-        x = kx + i * (kw + kg)
-        c.setFillColor(CARD)
-        c.roundRect(x, H - 360, kw, 130, 14, fill=1, stroke=0)
-        text(c, x + 28, H - 300, big, 56, GREEN, bold=True)
-        text(c, x + 28, H - 340, small, 26, GRAY)
-
-    # theme bars
-    maxpct = max(t[2] for t in F["themes"]) or 1
-    top = H - 415
-    row_h = 100
-    bar_x, bar_w = 900, 760
-    for i, (label, n, pct, sub) in enumerate(F["themes"]):
-        y = top - i * row_h
-        text(c, 80, y - 32, f"{i+1}. {label}", 30, WHITE, bold=True)
-        text(c, 80, y - 66, sub, 26, GRAY)
-        c.setFillColor(DARKGRAY)
-        c.roundRect(bar_x, y - 60, bar_w, 42, 10, fill=1, stroke=0)
-        c.setFillColor(GREEN)
-        c.roundRect(bar_x, y - 60, max(40, bar_w * pct / maxpct), 42, 10, fill=1, stroke=0)
-        text(c, bar_x + bar_w + 24, y - 52, f"{pct}%  ({n})", 30, WHITE, bold=True)
-
-    # act-first prioritization strip
-    c.setStrokeColor(DARKGRAY)
-    c.setLineWidth(1)
-    c.line(80, 168, W - 80, 168)
-    text(c, 80, 130, "Act first — opportunity score (Frequency × Severity × Impact)",
-         27, GREEN, bold=True)
-    parts = "   ·   ".join(
-        f"{r['priority']} {r['frustration']} ({r['opportunity_score']:.0f})"
-        for r in F["dash"]["opportunity_scores"]
-    )
-    text(c, 80, 92, parts, 26, WHITE)
-
-    footer(c, "Slide 1 · Review intelligence")
-    c.showPage()
-
-
-# --- slide 2: the six questions --------------------------------------------- #
-def slide_questions(c, F):
-    page_bg(c)
-    text(c, 80, H - 120, "What the reviews answer — by the numbers", 60, WHITE, bold=True)
-
-    qa = [
-        ("Why do users struggle to discover new music?",
-         "Low trust drives 58% of root causes; 'bad recommendations' is the #1 "
-         "frustration (10.1%). Discovery feels risky, not impossible."),
-        ("Most common frustrations with recommendations?",
-         "Bad recommendations 10.1% · Wrong mood 2.8% · Same songs 2.2% · "
-         "Same artists 2.2%  (P0 opportunity score 108)."),
-        ("What listening behaviors are users trying to achieve?",
-         "Similar-but-fresh 5.6% · Mood-based 2.8% · Deep discovery 2.2% — "
-         "situational discovery, not just 'new music'."),
-        ("What causes repeat listening of the same content?",
-         "Low trust 58% + recommendation fatigue 13% + taste bubble 13% of root "
-         "causes — familiar feels safer than a risky new pick."),
-        ("Which segments face different discovery challenges?",
-         "Playlist loyalists (12) → fatigue · Passive (6) → risky · Mood (5) → "
-         "wrong mood · Habitual (4) → repetition · Genre explorers (4) → shallow."),
-        ("What unmet needs emerge consistently?",
-         "Less-repetitive playlists 6.7% · Fresh-but-familiar 5.6% · "
-         "Mood-aware discovery 2.8% · Better control 2.2%."),
-    ]
-    col_w, gap = 870, 40
-    x0 = 80
-    top = H - 205
-    card_h = 196
-    for i, (q, a) in enumerate(qa):
-        col = i % 2
-        row = i // 2
-        x = x0 + col * (col_w + gap)
-        y = top - row * (card_h + 20)
-        c.setFillColor(CARD)
-        c.roundRect(x, y - card_h, col_w, card_h, 16, fill=1, stroke=0)
-        text(c, x + 30, y - 46, f"Q{i+1}", 28, GREEN, bold=True)
-        _wrap(c, q, x + 30, y - 84, col_w - 60, 28, WHITE, bold=True, lead=32)
-        _wrap(c, a, x + 30, y - 146, col_w - 60, 26, GRAY, lead=30)
-
-    # what-to-build + final insight
-    c.setStrokeColor(DARKGRAY)
-    c.setLineWidth(1)
-    c.line(80, 168, W - 80, 168)
-    opps = " · ".join(o["product_opportunity"] for o in F["dash"]["unmet_needs"][:3])
-    text(c, 80, 130, "Build next:", 27, GREEN, bold=True)
-    text(c, 80 + c.stringWidth("Build next: ", "Helvetica-Bold", 27), 130, opps, 26, WHITE)
-    text(c, 80, 92,
-         "Final insight — users want discovery that is low-risk, mood-aware, and "
-         "fresh without becoming random.", 27, WHITE, bold=True)
-
-    footer(c, "Slide 2 · 6 PM questions, number-based")
-    c.showPage()
-
-
-# --- text wrap -------------------------------------------------------------- #
 def _wrap(c, s, x, y, max_w, size, color=WHITE, bold=False, lead=30):
-    c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
-    words = s.split()
-    line = ""
-    cy = y
+    font = "Helvetica-Bold" if bold else "Helvetica"
+    words, line, cy = s.split(), "", y
     for w in words:
         trial = (line + " " + w).strip()
-        if c.stringWidth(trial, "Helvetica-Bold" if bold else "Helvetica", size) > max_w:
+        if c.stringWidth(trial, font, size) > max_w:
             text(c, x, cy, line, size, color, bold=bold)
-            line = w
-            cy -= lead
+            line, cy = w, cy - lead
         else:
             line = trial
     if line:
         text(c, x, cy, line, size, color, bold=bold)
+
+
+# --- the single slide ------------------------------------------------------- #
+def slide(c, F):
+    c.setFillColor(BG)
+    c.rect(0, 0, W, H, fill=1, stroke=0)
+    c.setFillColor(GREEN)
+    c.rect(0, H - 12, W, 12, fill=1, stroke=0)
+
+    # Header
+    text(c, 80, H - 84, "Users want freshness — without losing familiarity", 48, WHITE, bold=True)
+    text(c, 80, H - 124,
+         f"{F['n']} real reviews · App Store {F['src'].get('app_store',0)} + "
+         f"Play Store {F['src'].get('play_store',0)} · {F['pos']}% positive · "
+         f"{F['neg']}% negative · #1: bad recs 10.1% · P0 score 108",
+         26, GRAY)
+
+    # Left column — insight themes
+    text(c, 80, H - 182, "Top insight themes", 28, GREEN, bold=True)
+    ty = H - 240
+    for i, (label, n, pct, sub) in enumerate(F["themes"]):
+        y = ty - i * 110
+        text(c, 80, y, f"{i+1}. {label}", 27, WHITE, bold=True)
+        text(c, 870, y, f"{pct}%  ({n})", 27, GREEN, bold=True, right=True)
+        text(c, 80, y - 32, sub, 26, GRAY)
+
+    # Right column — the 6 questions, number-based
+    text(c, 920, H - 182, "What the reviews answer — by the numbers", 28, GREEN, bold=True)
+    qa = [
+        ("Why do users struggle to discover new music?",
+         "Low trust = 58% of root causes; 'bad recs' is the #1 frustration (10.1%). "
+         "Discovery feels risky, not impossible."),
+        ("Most common frustrations with recommendations?",
+         "Bad recs 10.1% · Wrong mood 2.8% · Same songs 2.2% · Same artists 2.2% "
+         "(P0 opportunity score 108)."),
+        ("What listening behaviors are users trying to achieve?",
+         "Similar-but-fresh 5.6% · Mood-based 2.8% · Deep discovery 2.2% — "
+         "situational discovery, not just 'new music'."),
+        ("What causes repeat listening of the same content?",
+         "Low trust 58% + fatigue 13% + taste bubble 13% of root causes — "
+         "familiar feels safer than a risky new pick."),
+        ("Which segments face different discovery challenges?",
+         "Playlist loyalists (12) → fatigue · Passive (6) → risky · Mood (5) → "
+         "wrong mood · Genre explorers (4) → shallow."),
+        ("What unmet needs emerge consistently?",
+         "Less-repetitive playlists 6.7% · Fresh-but-familiar 5.6% · "
+         "Mood-aware 2.8% · Better control 2.2%."),
+    ]
+    qy = H - 240
+    for i, (q, a) in enumerate(qa):
+        y = qy - i * 100
+        text(c, 920, y, f"Q{i+1}.  {q}", 26, WHITE, bold=True)
+        _wrap(c, a, 920, y - 30, 940, 26, GRAY, lead=30)
+
+    # Bottom band — prioritization + final insight
+    c.setStrokeColor(DARKGRAY)
+    c.setLineWidth(1)
+    c.line(80, 162, W - 80, 162)
+
+    def short(name):
+        return name.replace(" repeated", "").replace(" / context", "")
+    parts = " · ".join(
+        f"{r['priority']} {short(r['frustration'])} ({r['opportunity_score']:.0f})"
+        for r in F["dash"]["opportunity_scores"]
+    )
+    text(c, 80, 124, "Act first:", 27, GREEN, bold=True)
+    text(c, 80 + c.stringWidth("Act first: ", "Helvetica-Bold", 27), 124, parts, 26, WHITE)
+
+    text(c, 80, 86,
+         "Final insight:", 27, GREEN, bold=True)
+    text(c, 80 + c.stringWidth("Final insight: ", "Helvetica-Bold", 27), 86,
+         "users want discovery that is low-risk, mood-aware, and fresh without "
+         "becoming random.", 26, WHITE)
+
+    text(c, 80, 44, "Spotify Review Discovery Engine · all figures from live analysis",
+         26, GRAY)
+    text(c, W - 80, 44, APP_URL, 26, GREEN, right=True)
+    c.showPage()
 
 
 def main():
@@ -239,8 +192,7 @@ def main():
     out.mkdir(exist_ok=True)
     path = out / "Spotify_Discovery_Insights.pdf"
     c = canvas.Canvas(str(path), pagesize=(W, H))
-    slide_themes(c, F)
-    slide_questions(c, F)
+    slide(c, F)
     c.save()
     print(f"Wrote {path}  ({path.stat().st_size} bytes)")
 
