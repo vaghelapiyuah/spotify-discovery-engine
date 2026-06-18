@@ -1,0 +1,14 @@
+anthropic>=0.92.0
+pydantic>=2.6
+python-dotenv>=1.0
+
+# Live Play Store reviews (App Store uses the stdlib RSS feed, no dep needed).
+google-play-scraper>=1.2.7
+
+# Dashboard + theme clustering / RAG retrieval.
+streamlit>=1.36
+scikit-learn>=1.4
+pandas>=2.0
+
+# Dev / offline tests (optional — tests also run with plain `python`).
+pytest>=8.0

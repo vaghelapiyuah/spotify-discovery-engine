@@ -1,0 +1,124 @@
+[
+  {
+    "source": "app_store",
+    "text": "Spotify keeps recommending the same songs again and again. Discover Weekly used to be amazing, now it just replays stuff I already know.",
+    "rating": 2,
+    "date": "2026-05-02",
+    "country": "US",
+    "app_version": "8.9.30"
+  },
+  {
+    "source": "app_store",
+    "text": "I want new music but I don't want to waste time skipping bad songs. Every recommendation feels like a gamble.",
+    "rating": 3,
+    "date": "2026-05-11",
+    "country": "GB",
+    "app_version": "8.9.32"
+  },
+  {
+    "source": "app_store",
+    "text": "Love it",
+    "rating": 5,
+    "date": "2026-04-18",
+    "country": "US",
+    "app_version": "8.9.28"
+  },
+  {
+    "source": "play_store",
+    "text": "The algorithm thinks I only like one genre. I'm into so much more but it just keeps me boxed into lo-fi forever.",
+    "rating": 2,
+    "date": "2026-05-20",
+    "device": "Pixel 7",
+    "app_version": "8.9.32"
+  },
+  {
+    "source": "play_store",
+    "text": "App crashes every time I open Discover Weekly on my Samsung. Can't even see my recommendations.",
+    "rating": 1,
+    "date": "2026-05-22",
+    "device": "Galaxy S22",
+    "app_version": "8.9.33"
+  },
+  {
+    "source": "play_store",
+    "text": "Give me calm songs after a long day, but the chill playlists never match my actual mood. It throws hype tracks when I want to wind down.",
+    "rating": 3,
+    "date": "2026-05-09",
+    "device": "OnePlus 11",
+    "app_version": "8.9.31"
+  },
+  {
+    "source": "play_store",
+    "text": "FREE FOLLOWERS!!! click here >>> spotifyboost dot com get 10000 plays now!!!",
+    "rating": 5,
+    "date": "2026-05-01",
+    "device": "Redmi Note 12"
+  },
+  {
+    "source": "reddit",
+    "text": "Honestly Discover Weekly feels dead now. It used to introduce me to underground artists before they blew up, now it's the same safe mainstream picks every single week. I miss finding hidden gems.",
+    "date": "2026-05-14",
+    "country": "CA"
+  },
+  {
+    "source": "reddit",
+    "text": "I basically just listen to my own saved playlists at this point. It's easier than fighting the algorithm. I don't trust it to find me anything good anymore.",
+    "date": "2026-05-16",
+    "country": "US"
+  },
+  {
+    "source": "reddit",
+    "text": "Why is there no easy way to tell Spotify what I want today? Some days I want to explore, some days I want comfort songs. I wish I could just steer it.",
+    "date": "2026-05-18",
+    "country": "AU"
+  },
+  {
+    "source": "reddit",
+    "text": "I want to find songs like the one playing but not literally the same five tracks on repeat. Radio just loops the same artists.",
+    "date": "2026-05-19",
+    "country": "US"
+  },
+  {
+    "source": "community_forum",
+    "text": "Feature request: please add a 'reset my taste' button. I feel trapped in my old listening habits and there's no way to escape the bubble Spotify built around me.",
+    "date": "2026-04-29",
+    "country": "DE"
+  },
+  {
+    "source": "community_forum",
+    "text": "It would help so much if recommendations explained WHY a song was picked. Right now I have no idea why I'm getting these suggestions, so I don't trust them.",
+    "date": "2026-05-05",
+    "country": "NL"
+  },
+  {
+    "source": "community_forum",
+    "text": "My playlists feel stale. The same songs sit there for months. I wish they evolved on their own so there was always something a little new.",
+    "date": "2026-05-12",
+    "country": "SE"
+  },
+  {
+    "source": "social_media",
+    "text": "spotify pls i just want music my friends are actually listening to, the discover stuff feels so random and disconnected from whats trending",
+    "date": "2026-05-21",
+    "country": "US"
+  },
+  {
+    "source": "social_media",
+    "text": "necesito canciones para el gimnasio pero spotify siempre me pone lo mismo, no descubro nada nuevo para entrenar",
+    "date": "2026-05-23",
+    "country": "MX",
+    "language": "es"
+  },
+  {
+    "source": "social_media",
+    "text": "Same songs again 😭 discover weekly is dead fr",
+    "date": "2026-05-24",
+    "country": "US"
+  },
+  {
+    "source": "social_media",
+    "text": "Spotify keeps recommending the same songs again and again. Discover Weekly used to be amazing, now it just replays stuff I already know.",
+    "date": "2026-05-25",
+    "country": "US"
+  }
+]
