@@ -1,5 +1,6 @@
 """Render Slide 08 (KPI tree / metrics framework) and Slide 09 (FreshMix AI
-product feature) as a 1920x1080 PDF, from the Figma design spec.
+product feature) as a 1920x1080 PDF. Spotify dark theme, every text >= 26px,
+no source link, no names.
 
 Run:  python make_kpi_slides.py  ->  slides/Slides_08_09.pdf
 """
@@ -14,20 +15,20 @@ from reportlab.pdfgen import canvas
 W, H = 1920, 1080
 G = HexColor("#1DB954")
 BG = HexColor("#080808")
-CARD = HexColor("#111111")
-CARD2 = HexColor("#181818")
-BORDER = HexColor("#222222")
+CARD = HexColor("#121212")
+CARD2 = HexColor("#1a1a1a")
+BORDER = HexColor("#262626")
 WHITE = HexColor("#FFFFFF")
 W70 = HexColor("#b3b3b3")
-W60 = HexColor("#999999")
-W40 = HexColor("#666666")
-W30 = HexColor("#4a4a4a")
+W50 = HexColor("#8a8a8a")
 BLUE = HexColor("#4fc3f7")
 ORANGE = HexColor("#ff7043")
 PURPLE = HexColor("#a855f7")
 YELLOW = HexColor("#facc15")
 NSGREEN = HexColor("#0c1a0e")
 TAKE = HexColor("#101a10")
+BLACK = HexColor("#000000")
+PHONE = HexColor("#0d0d0d")
 
 
 def rrect(c, x, top, w, h, rad, fill=None, border=None, alpha=1.0, bw=1):
@@ -36,9 +37,8 @@ def rrect(c, x, top, w, h, rad, fill=None, border=None, alpha=1.0, bw=1):
         c.setFillColor(fill); c.setFillAlpha(alpha)
         c.roundRect(x, y0, w, h, rad, fill=1, stroke=0); c.setFillAlpha(1)
     if border is not None:
-        c.setStrokeColor(border); c.setStrokeAlpha(alpha if fill is None else 1)
-        c.setLineWidth(bw); c.roundRect(x, y0, w, h, rad, fill=0, stroke=1)
-        c.setStrokeAlpha(1)
+        c.setStrokeColor(border); c.setLineWidth(bw)
+        c.roundRect(x, y0, w, h, rad, fill=0, stroke=1)
 
 
 def txt(c, x, top, s, size, color, bold=False, center=False, right=False,
@@ -65,10 +65,10 @@ def spans(c, x, top, parts, size, bold=False):
         cx += c.stringWidth(s, font, size)
 
 
-def pill(c, x, top, s, size, fg, bgcol, alpha=0.15, border=None, h=30, padx=14):
-    w = c.stringWidth(s, "Helvetica-Bold", size) + padx * 2
+def pill(c, x, top, s, size, fg, bgcol, alpha=0.16, border=None, h=46, padx=18, bold=True):
+    w = c.stringWidth(s, "Helvetica-Bold" if bold else "Helvetica", size) + padx * 2
     rrect(c, x, top, w, h, h / 2, fill=bgcol, alpha=alpha, border=border)
-    txt(c, x + padx, top + h - (h - size) / 2 - size * 0.16, s, size, fg, bold=True)
+    txt(c, x + padx, top + (h + size) / 2 - size * 0.30, s, size, fg, bold=bold)
     return w
 
 
@@ -81,254 +81,246 @@ def disc(c, cx, cy_top, r, fill=None, border=None, bw=2, alpha=1.0):
         c.setStrokeColor(border); c.setLineWidth(bw); c.circle(cx, cy, r, fill=0, stroke=1)
 
 
-def badge_label(c, x, top, s):
-    txt(c, x, top, s, 13, G, bold=True)
-
-
-# --------------------------------------------------------------------------- #
-# Slide 08 — KPI tree
-# --------------------------------------------------------------------------- #
-def slide8(c):
-    c.setFillColor(BG); c.rect(0, 0, W, H, fill=1, stroke=0)
-
-    # Header
-    pill(c, 70, 50, "SLIDE 08  ·  METRICS FRAMEWORK", 14, G, G, alpha=0.15, border=G, h=32)
-    spans(c, 70, 124, [("Success will be measured by ", WHITE),
-                       ("Meaningful Discovery Rate", G), (",", WHITE)], 40, bold=True)
-    txt(c, 70, 172, "not just number of songs played", 40, WHITE, bold=True)
-    txt(c, 1850, 78, "SPOTIFY", 15, W60, bold=True, right=True, alpha=0.45)
-
-    # North Star card
-    rrect(c, 70, 200, 1780, 150, 22, fill=NSGREEN, border=G, alpha=1, bw=1)
-    rrect(c, 70, 200, 1780, 150, 22, border=G, bw=1)
-    disc(c, 129, 275, 30, fill=G, border=None)
-    disc(c, 129, 275, 14, fill=NSGREEN)
-    txt(c, 185, 238, "NORTH STAR METRIC", 13, G, bold=True)
-    txt(c, 185, 282, "Meaningful Discovery Rate", 32, WHITE, bold=True)
-    c.setStrokeColor(G); c.setStrokeAlpha(0.25); c.setLineWidth(1)
-    c.line(595, H - 222, 595, H - 332); c.setStrokeAlpha(1)
-    txt(c, 625, 238, "FORMULA", 12, W30, bold=True)
-    spans(c, 625, 282, [("New tracks w/ positive actions", G), ("   ÷   ", W30),
-                        ("Total discovery tracks played", W60)], 19, bold=True)
-    c.setStrokeColor(G); c.setStrokeAlpha(0.25); c.setLineWidth(1)
-    c.line(1255, H - 222, 1255, H - 332); c.setStrokeAlpha(1)
-    txt(c, 1285, 238, "WHY IT MATTERS", 12, W30, bold=True)
-    txt(c, 1285, 278, "Measures whether discovery actually creates useful", 20, W60)
-    txt(c, 1285, 308, "new listening — not just more plays.", 20, W60)
-
-    # KPI tree columns
-    ctop, ch = 374, 466
-    cw = 501
-    x1 = 70
-    xmdr = x1 + cw + 68
-    x2 = xmdr + 88 + 68
-    xshield = x2 + cw
-    x3 = xshield + 52
-
-    def colcard(x, accent, title, purpose, badge, metrics):
-        rrect(c, x, ctop, cw, ch, 22, fill=CARD, border=BORDER)
-        rrect(c, x + 24, ctop, cw - 48, 4, 2, fill=accent)
-        rrect(c, x + 26, ctop + 24, 48, 48, 12, fill=accent, alpha=0.10, border=accent)
-        txt(c, x + 88, ctop + 56, title, 26, WHITE, bold=True)
-        txt(c, x + 88, ctop + 82, purpose, 17, W60)
-        pill(c, x + 26, ctop + 100, badge, 13, accent, accent, alpha=0.12, border=accent, h=28)
-        ry = ctop + 150
-        for m in metrics:
-            rrect(c, x + 26, ry, cw - 52, 56, 12, fill=CARD2, border=BORDER)
-            disc(c, x + 50, ry + 28, 6, fill=accent)
-            txt(c, x + 72, ry + 36, m, 24, WHITE)
-            ry += 66
-
-    colcard(x1, BLUE, "Input Metrics", "Are users trying the feature?", "INPUTS",
-            ["Feature starts", "User prompts entered", "Freshness slider usage",
-             "Mood / activity selections"])
-    colcard(x2, G, "Output Metrics", "Are users finding value?", "OUTPUTS",
-            ["Save rate", "Replay within 7 days", "Playlist add rate",
-             "Artist follow rate"])
-    colcard(x3, ORANGE, "Guardrail Metrics", "Avoiding bad discovery?", "SAFETY CHECK",
-            ["Skip rate under 30 sec", "Session abandonment",
-             "User satisfaction score", "Repetition complaints"])
-
-    # Connectors
-    def connector(cx, label):
-        c.setStrokeColor(G); c.setLineWidth(2)
-        c.line(cx - 17, H - (ctop + ch / 2), cx + 13, H - (ctop + ch / 2))
-        txt(c, cx + 17, ctop + ch / 2 + 5, ">", 22, G, bold=True)
-        txt(c, cx, ctop + ch / 2 + 34, label, 12, W30, bold=True, center=True)
-
-    connector(x1 + cw + 34, "DRIVES")
-    connector(xmdr + 88 + 34, "YIELDS")
-
-    # MDR node
-    mcx = xmdr + 44
-    disc(c, mcx, ctop + ch / 2, 40, fill=G, border=G, bw=2)
-    disc(c, mcx, ctop + ch / 2, 20, fill=BG)
-    txt(c, mcx, ctop + ch / 2 + 90, "MDR", 14, G, bold=True, center=True)
-
-    # Shield connector
-    scx = xshield + 26
-    rrect(c, scx - 18, ctop + ch / 2 - 18, 36, 36, 9, fill=ORANGE, alpha=0.16, border=ORANGE)
-    txt(c, scx, ctop + ch / 2 + 50, "SAFETY", 12, ORANGE, bold=True, center=True, alpha=0.8)
-
-    # Takeaway bar
-    rrect(c, 70, 880, 1780, 80, 16, fill=TAKE, border=G, alpha=1)
-    rrect(c, 70, 880, 1780, 80, 16, border=G, bw=1)
-    disc(c, 105, 920, 19, fill=G, border=G); disc(c, 105, 920, 8, fill=BG)
-    txt(c, 138, 928, "KEY TAKEAWAY", 13, G, bold=True)
-    c.setStrokeColor(G); c.setStrokeAlpha(0.3); c.setLineWidth(1)
-    c.line(290, H - 902, 290, H - 938); c.setStrokeAlpha(1)
-    spans(c, 312, 929, [("Success is not ", WHITE), ("“more songs played”", W60, True),
-                        (" — success is users discovering music they ", WHITE),
-                        ("save, replay, and trust.", G)], 25, bold=False)
-
-
-# --------------------------------------------------------------------------- #
-# Slide 09 — FreshMix AI product feature
-# --------------------------------------------------------------------------- #
-def slide9(c):
-    c.setFillColor(BG); c.rect(0, 0, W, H, fill=1, stroke=0)
-
-    pill(c, 70, 50, "SLIDE 09  ·  PRODUCT FEATURE", 14, G, G, alpha=0.15, border=G, h=32)
-    spans(c, 70, 124, [("FreshMix AI", G),
-                       (" helps users discover new music through", WHITE)], 38, bold=True)
-    txt(c, 70, 170, "mood, activity, and freshness control", 38, WHITE, bold=True)
-    txt(c, 1850, 78, "SPOTIFY", 15, W40, bold=True, right=True, alpha=0.45)
-
-    btop, bh = 360, 600
-    xL, wL = 70, 360
-    xM = xL + wL + 28
-    wR = 440
-    xR = 1850 - wR
-    wM = xR - 28 - xM
-
-    # LEFT — MVP flow
-    rrect(c, xL, btop, wL, bh, 22, fill=CARD, border=BORDER)
-    rrect(c, xL + 20, btop, wL - 40, 4, 2, fill=G)
-    txt(c, xL + 24, btop + 38, "MVP FLOW", 13, G, bold=True)
-    steps = [(1, "User opens FreshMix AI", None),
-             (2, "Selects mood, activity & language", None),
-             (3, "Adjusts freshness level", "Familiar  <->  Fresh slider"),
-             (4, "AI generates fresh-but-familiar queue", None),
-             (5, "Saves, skips, or refreshes songs", "Feedback improves future mixes")]
-    sy = btop + 80
-    for num, label, sub in steps:
-        disc(c, xL + 24 + 19, sy + 19, 19, fill=G, alpha=0.12, border=G)
-        txt(c, xL + 24 + 19, sy + 27, str(num), 16, G, bold=True, center=True)
-        _wrap(c, label, xL + 70, sy + 22, wL - 96, 22, bold=True, lead=26, color=WHITE)
-        if sub:
-            txt(c, xL + 70, sy + 52, sub, 16, W40)
-        if num != 5:
-            c.setStrokeColor(W30); c.setLineWidth(2)
-            c.line(xL + 24 + 19, H - (sy + 44), xL + 24 + 19, H - (sy + 70))
-        sy += 96
-
-    # MIDDLE — phone wireframe
-    rrect(c, xM, btop, wM, bh, 22, fill=CARD, border=BORDER)
-    rrect(c, xM + 20, btop, wM - 40, 4, 2, fill=PURPLE)
-    txt(c, xM + 26, btop + 38, "FEATURE WIREFRAME", 13, PURPLE, bold=True)
-    phone(c, xM + wM / 2 - 165, btop + 64, 330)
-    # prompt examples
-    py = btop + bh - 70
-    ex = ['"Give me fresh Hindi indie songs for late-night work."',
-          '"Refresh my gym playlist with 60% new songs."']
-    ew = (wM - 52 - 16) / 2
-    for i, e in enumerate(ex):
-        ex_x = xM + 26 + i * (ew + 16)
-        rrect(c, ex_x, py, ew, 54, 27, fill=CARD2, border=BORDER)
-        _wrap(c, e, ex_x + 20, py + 22, ew - 36, 16, bold=False, lead=19, color=W70, oblique=True)
-
-    # RIGHT — why AI
-    rrect(c, xR, btop, wR, bh, 22, fill=CARD, border=BORDER)
-    rrect(c, xR + 20, btop, wR - 40, 4, 2, fill=YELLOW)
-    txt(c, xR + 24, btop + 38, "WHY AI IS NEEDED", 13, YELLOW, bold=True)
-    cards = [(BLUE, "Understands natural language", '"like this playlist, but less repetitive"'),
-             (G, "Reads real-time context", "Mood, activity, language, and moment"),
-             (PURPLE, "Balances familiar + fresh", "Avoids songs that feel too random"),
-             (YELLOW, "Learns from feedback", "Uses saves, skips, replays to improve")]
-    iy = btop + 64
-    ih = 116
-    for accent, title, ex in cards:
-        rrect(c, xR + 24, iy, wR - 48, ih, 16, fill=CARD, border=BORDER)
-        rrect(c, xR + 24, iy + 16, 4, ih - 32, 2, fill=accent)
-        rrect(c, xR + 42, iy + 22, 40, 40, 10, fill=accent, alpha=0.16, border=accent)
-        txt(c, xR + 98, iy + 44, title, 23, WHITE, bold=True)
-        _wrap(c, ex, xR + 98, iy + 74, wR - 140, 18, bold=False, lead=24, color=W40, oblique=True)
-        iy += ih + 12
-
-    # Takeaway
-    rrect(c, 70, 982, 1780, 74, 16, fill=TAKE, border=G)
-    rrect(c, 90, 1002, 36, 36, 10, fill=G, alpha=0.16, border=G)
-    txt(c, 138, 1027, "KEY TAKEAWAY", 13, G, bold=True)
-    c.setStrokeColor(G); c.setStrokeAlpha(0.3); c.setLineWidth(1)
-    c.line(290, H - 1002, 290, H - 1038); c.setStrokeAlpha(1)
-    spans(c, 312, 1028, [("AI turns discovery from ", WHITE),
-                         ("passive recommendations", W40, True),
-                         (" into an ", WHITE),
-                         ("interactive music guide.", G)], 25, bold=False)
-
-
-def phone(c, x, top, w):
-    ph = 452
-    rrect(c, x, top, w, ph, 32, fill=HexColor("#0d0d0d"), border=HexColor("#2a2a2a"), bw=2)
-    rrect(c, x + w / 2 - 40, top + 11, 80, 14, 7, fill=HexColor("#111111"))
-    # header
-    rrect(c, x + 18, top + 40, 28, 28, 8, fill=G)
-    txt(c, x + 54, top + 60, "FreshMix AI", 15, WHITE, bold=True)
-    # prompt
-    rrect(c, x + 14, top + 84, w - 28, 40, 10, fill=HexColor("#1a1a1a"), border=HexColor("#2a2a2a"))
-    txt(c, x + 26, top + 109, '"Refresh my playlist, keep the vibe"', 12, W40)
-    # mood
-    txt(c, x + 16, top + 146, "MOOD", 10, W40, bold=True)
-    chips(c, x + 14, top + 154, ["Focus", "Gym", "Chill", "Travel"], 0)
-    # activity
-    txt(c, x + 16, top + 196, "ACTIVITY", 10, W40, bold=True)
-    chips(c, x + 14, top + 204, ["Work", "Commute", "Workout"], 0)
-    # freshness
-    txt(c, x + 16, top + 246, "FRESHNESS  —  70% FRESH", 10, G, bold=True)
-    rrect(c, x + 14, top + 256, w - 28, 6, 3, fill=HexColor("#2a2a2a"))
-    rrect(c, x + 14, top + 256, (w - 28) * 0.7, 6, 3, fill=G)
-    disc(c, x + 14 + (w - 28) * 0.7, top + 259, 7, fill=G, border=WHITE, bw=2)
-    # generate
-    rrect(c, x + 14, top + 280, w - 28, 36, 9, fill=G)
-    txt(c, x + w / 2, top + 304, "Generate FreshMix", 14, HexColor("#000000"), bold=True, center=True)
-    # song cards
-    for i, (t, a) in enumerate([("New Discovery #1", "Indie Artist · 2024"),
-                                ("New Discovery #2", "Electronic · Trending")]):
-        cy = top + 330 + i * 72
-        rrect(c, x + 14, cy, w - 28, 64, 10, fill=HexColor("#1a1a1a"), border=HexColor("#252525"))
-        rrect(c, x + 26, cy + 12, 30, 30, 7, fill=G, alpha=0.25, border=G)
-        txt(c, x + 66, cy + 24, t, 13, WHITE, bold=True)
-        txt(c, x + 66, cy + 40, a, 11, W40)
-        for j, lbl in enumerate(["Save", "Skip", "Refresh"]):
-            bw_ = (w - 52 - 12) / 3
-            bx = x + 26 + j * (bw_ + 6)
-            rrect(c, bx, cy + 46, bw_, 14, 4, fill=HexColor("#252525"), border=HexColor("#333333"))
-            txt(c, bx + bw_ / 2, cy + 56, lbl, 9, W70, bold=True, center=True)
-
-
-def chips(c, x, top, labels, active_idx):
-    cx = x
-    for i, lbl in enumerate(labels):
-        w = c.stringWidth(lbl, "Helvetica-Bold", 12) + 22
-        act = i == 0
-        rrect(c, cx, top, w, 24, 12, fill=(G if act else HexColor("#1a1a1a")),
-              alpha=(0.22 if act else 1), border=(G if act else HexColor("#2a2a2a")))
-        txt(c, cx + 11, top + 17, lbl, 12, (G if act else W70), bold=act)
-        cx += w + 6
-
-
-def _wrap(c, s, x, top, max_w, size, bold=False, lead=22, color=W40, oblique=False):
+def wrap(c, s, x, top, max_w, size, color, bold=False, lead=34, oblique=False, max_lines=99):
     font = "Helvetica-Bold" if bold else ("Helvetica-Oblique" if oblique else "Helvetica")
-    words, line, cy = s.split(), "", top
-    for w in words:
-        trial = (line + " " + w).strip()
-        if c.stringWidth(trial, font, size) > max_w:
+    words, line, cy, n = s.split(), "", top, 0
+    for w_ in words:
+        trial = (line + " " + w_).strip()
+        if c.stringWidth(trial, font, size) > max_w and line:
             txt(c, x, cy, line, size, color, bold=bold, oblique=oblique)
-            line, cy = w, cy + lead
+            line, cy, n = w_, cy + lead, n + 1
+            if n >= max_lines:
+                line = ""
+                break
         else:
             line = trial
     if line:
         txt(c, x, cy, line, size, color, bold=bold, oblique=oblique)
+    return cy
+
+
+def arrow_h(c, x1, x2, ytop, color):
+    y = H - ytop
+    c.setStrokeColor(color); c.setLineWidth(3)
+    c.line(x1, y, x2 - 10, y)
+    p = c.beginPath(); p.moveTo(x2 - 14, y + 8); p.lineTo(x2, y); p.lineTo(x2 - 14, y - 8)
+    p.close(); c.setFillColor(color); c.drawPath(p, fill=1, stroke=0)
+
+
+# --------------------------------------------------------------------------- #
+# Slide 08
+# --------------------------------------------------------------------------- #
+def slide8(c):
+    c.setFillColor(BG); c.rect(0, 0, W, H, fill=1, stroke=0)
+
+    pill(c, 70, 46, "SLIDE 08", 28, G, G, alpha=0.16, border=G, h=52)
+    spans(c, 70, 150, [("Success will be measured by ", WHITE),
+                       ("Meaningful Discovery Rate", G), (",", WHITE)], 46, bold=True)
+    txt(c, 70, 206, "not just number of songs played", 46, WHITE, bold=True)
+
+    # North Star card
+    rrect(c, 70, 250, 1780, 232, 24, fill=NSGREEN, border=G, bw=2)
+    disc(c, 132, 366, 36, fill=G); disc(c, 132, 366, 15, fill=NSGREEN)
+    txt(c, 192, 326, "NORTH STAR METRIC", 28, G, bold=True)
+    txt(c, 192, 388, "Meaningful Discovery Rate", 44, WHITE, bold=True)
+    c.setStrokeColor(G); c.setStrokeAlpha(0.3); c.setLineWidth(1)
+    c.line(900, H - 285, 900, H - 447); c.setStrokeAlpha(1)
+    txt(c, 940, 322, "FORMULA", 28, W50, bold=True)
+    spans(c, 940, 372, [("New tracks w/ positive actions", G), ("  ÷  ", W50),
+                        ("Total discovery plays", W70)], 30, bold=True)
+    txt(c, 940, 430, "Does discovery create useful new listening — not just more plays?",
+        27, W70)
+
+    # KPI tree
+    ctop, ch = 520, 392
+    cw = 505
+    x1 = 70
+    xmdr = x1 + cw + 56
+    x2 = xmdr + 96 + 56
+    xshield = x2 + cw
+    x3 = xshield + 56
+
+    def colcard(x, accent, title, purpose, metrics):
+        rrect(c, x, ctop, cw, ch, 22, fill=CARD, border=BORDER)
+        rrect(c, x + 26, ctop, cw - 52, 4, 2, fill=accent)
+        rrect(c, x + 28, ctop + 26, 46, 46, 12, fill=accent, alpha=0.14, border=accent)
+        disc(c, x + 51, ctop + 49, 7, fill=accent)
+        txt(c, x + 90, ctop + 56, title, 30, WHITE, bold=True)
+        txt(c, x + 28, ctop + 104, purpose, 26, accent)
+        ry = ctop + 132
+        for m in metrics:
+            rrect(c, x + 26, ry, cw - 52, 56, 12, fill=CARD2, border=BORDER)
+            disc(c, x + 50, ry + 28, 6, fill=accent)
+            txt(c, x + 72, ry + 37, m, 26, WHITE)
+            ry += 64
+
+    colcard(x1, BLUE, "Input Metrics", "Are users trying the feature?",
+            ["Feature starts", "User prompts entered", "Freshness slider usage",
+             "Mood / activity selections"])
+    colcard(x2, G, "Output Metrics", "Are users finding value?",
+            ["Save rate", "Replay within 7 days", "Playlist add rate",
+             "Artist follow rate"])
+    colcard(x3, ORANGE, "Guardrail Metrics", "Avoiding bad discovery?",
+            ["Skip rate under 30 sec", "Session abandonment",
+             "User satisfaction", "Repetition complaints"])
+
+    mid = ctop + ch / 2
+    arrow_h(c, x1 + cw + 6, xmdr - 6, mid, G)
+    arrow_h(c, xmdr + 96 + 6, x2 - 6, mid, G)
+    disc(c, xmdr + 48, mid, 46, fill=G, alpha=0.16, border=G, bw=3)
+    disc(c, xmdr + 48, mid, 20, fill=BG)
+    txt(c, xmdr + 48, mid + 96, "NORTH STAR", 26, G, bold=True, center=True)
+    # guardrail safety link
+    c.setStrokeColor(ORANGE); c.setLineWidth(3)
+    c.line(x2 + cw + 6, H - mid, x3 - 6, H - mid)
+    rrect(c, xshield + 8, mid - 20, 40, 40, 10, fill=ORANGE, alpha=0.18, border=ORANGE)
+
+    # Takeaway
+    rrect(c, 70, 950, 1780, 88, 16, fill=TAKE, border=G, bw=2)
+    rrect(c, 92, 974, 40, 40, 10, fill=G, alpha=0.18, border=G)
+    txt(c, 150, 1002, "KEY TAKEAWAY", 26, G, bold=True)
+    c.setStrokeColor(G); c.setStrokeAlpha(0.35); c.setLineWidth(1)
+    c.line(330, H - 968, 330, H - 1020); c.setStrokeAlpha(1)
+    spans(c, 352, 1004, [("Success is not ", WHITE), ("“more songs played”", W50, True),
+                         (" — it's users discovering music they ", WHITE),
+                         ("save, replay, and trust.", G)], 28, bold=False)
+
+
+# --------------------------------------------------------------------------- #
+# Slide 09
+# --------------------------------------------------------------------------- #
+def slide9(c):
+    c.setFillColor(BG); c.rect(0, 0, W, H, fill=1, stroke=0)
+
+    pill(c, 70, 46, "SLIDE 09", 28, G, G, alpha=0.16, border=G, h=52)
+    spans(c, 70, 150, [("FreshMix AI", G),
+                       (" helps users discover new music through", WHITE)], 44, bold=True)
+    txt(c, 70, 204, "mood, activity, and freshness control", 44, WHITE, bold=True)
+
+    btop, bh = 220, 660
+    xL, wL = 70, 384
+    xM = xL + wL + 30
+    wR = 472
+    xR = 1850 - wR
+    wM = xR - 30 - xM
+
+    # LEFT — MVP flow
+    rrect(c, xL, btop, wL, bh, 22, fill=CARD, border=BORDER)
+    rrect(c, xL + 22, btop, wL - 44, 4, 2, fill=G)
+    txt(c, xL + 26, btop + 48, "MVP FLOW", 26, G, bold=True)
+    steps = [("User opens FreshMix AI", None),
+             ("Selects mood, activity & language", None),
+             ("Adjusts freshness level", "Familiar  ->  Fresh slider"),
+             ("AI generates a fresh-but-familiar queue", None),
+             ("Saves, skips, or refreshes songs", "Feedback improves mixes")]
+    sy = btop + 96
+    step_gap = 104
+    for i, (label, sub) in enumerate(steps):
+        ccx = xL + 26 + 24
+        disc(c, ccx, sy + 24, 24, fill=G, alpha=0.14, border=G)
+        txt(c, ccx, sy + 33, str(i + 1), 28, G, bold=True, center=True)
+        endy = wrap(c, label, xL + 78, sy + 30, wL - 104, 26, WHITE, bold=True, lead=32)
+        if sub:
+            txt(c, xL + 78, endy + 32, sub, 26, W50)
+        if i < len(steps) - 1:
+            c.setStrokeColor(BORDER); c.setLineWidth(3)
+            c.line(ccx, H - (sy + 50), ccx, H - (sy + step_gap - 6))
+        sy += step_gap
+
+    # MIDDLE — phone
+    rrect(c, xM, btop, wM, bh, 22, fill=CARD, border=BORDER)
+    rrect(c, xM + 22, btop, wM - 44, 4, 2, fill=PURPLE)
+    txt(c, xM + 26, btop + 48, "FEATURE WIREFRAME", 26, PURPLE, bold=True)
+    phone(c, xM + (wM - 520) / 2, btop + 70, 520)
+
+    # RIGHT — why AI
+    rrect(c, xR, btop, wR, bh, 22, fill=CARD, border=BORDER)
+    rrect(c, xR + 22, btop, wR - 44, 4, 2, fill=YELLOW)
+    txt(c, xR + 26, btop + 48, "WHY AI IS NEEDED", 26, YELLOW, bold=True)
+    cards = [(BLUE, "Understands natural language", '"like this, but less repetitive"'),
+             (G, "Reads real-time context", "Mood, activity, language, moment"),
+             (PURPLE, "Balances familiar + fresh", "Avoids songs that feel random"),
+             (YELLOW, "Learns from feedback", "Saves, skips, replays improve it")]
+    iy = btop + 78
+    ih = 126
+    for accent, title, ex in cards:
+        rrect(c, xR + 26, iy, wR - 52, ih, 16, fill=CARD2, border=BORDER)
+        rrect(c, xR + 26, iy + 18, 5, ih - 36, 2, fill=accent)
+        rrect(c, xR + 46, iy + 24, 46, 46, 11, fill=accent, alpha=0.16, border=accent)
+        disc(c, xR + 69, iy + 47, 7, fill=accent)
+        txt(c, xR + 108, iy + 50, title, 27, WHITE, bold=True)
+        txt(c, xR + 108, iy + 90, ex, 26, W50, oblique=True)
+        iy += ih + 8
+
+    # Bottom prompt example pills
+    pw = (1780 - 30) / 2
+    for i, p in enumerate(['"Give me fresh Hindi indie songs for late-night work."',
+                           '"Refresh my gym playlist with 60% new songs."']):
+        px = 70 + i * (pw + 30)
+        rrect(c, px, 896, pw, 60, 30, fill=CARD2, border=BORDER)
+        disc(c, px + 36, 926, 8, fill=G)
+        txt(c, px + 60, 935, p, 26, W70, oblique=True)
+
+    # Takeaway
+    rrect(c, 70, 972, 1780, 84, 16, fill=TAKE, border=G, bw=2)
+    rrect(c, 92, 994, 40, 40, 10, fill=G, alpha=0.18, border=G)
+    txt(c, 150, 1022, "KEY TAKEAWAY", 26, G, bold=True)
+    c.setStrokeColor(G); c.setStrokeAlpha(0.35); c.setLineWidth(1)
+    c.line(330, H - 988, 330, H - 1040); c.setStrokeAlpha(1)
+    spans(c, 352, 1024, [("AI turns discovery from ", WHITE),
+                         ("passive recommendations", W50, True),
+                         (" into an ", WHITE),
+                         ("interactive music guide.", G)], 28, bold=False)
+
+
+def chips(c, x, top, labels):
+    cx = x
+    for i, lbl in enumerate(labels):
+        act = i == 0
+        w = c.stringWidth(lbl, "Helvetica-Bold", 26) + 30
+        rrect(c, cx, top, w, 44, 22, fill=(G if act else CARD2),
+              alpha=(0.22 if act else 1), border=(G if act else BORDER))
+        txt(c, cx + 15, top + 31, lbl, 26, (G if act else W70), bold=act)
+        cx += w + 10
+
+
+def phone(c, x, top, w):
+    ph = 590
+    inner = w - 44
+    rrect(c, x, top, w, ph, 34, fill=PHONE, border=HexColor("#2a2a2a"), bw=2)
+    rrect(c, x + w / 2 - 46, top + 14, 92, 14, 7, fill=HexColor("#1a1a1a"))
+    # header
+    rrect(c, x + 22, top + 40, 40, 40, 10, fill=G)
+    txt(c, x + 74, top + 68, "FreshMix AI", 28, WHITE, bold=True)
+    # prompt
+    rrect(c, x + 22, top + 92, inner, 56, 12, fill=CARD2, border=HexColor("#2a2a2a"))
+    txt(c, x + 38, top + 127, '"Refresh my playlist, keep the vibe"', 26, W70)
+    # mood
+    txt(c, x + 24, top + 178, "MOOD", 26, W50, bold=True)
+    chips(c, x + 22, top + 190, ["Focus", "Gym", "Chill"])
+    # activity
+    txt(c, x + 24, top + 258, "ACTIVITY", 26, W50, bold=True)
+    chips(c, x + 22, top + 270, ["Work", "Commute"])
+    # freshness
+    txt(c, x + 24, top + 340, "FRESHNESS", 26, W50, bold=True)
+    txt(c, x + w - 22, top + 340, "Fresh 70%", 26, G, bold=True, right=True)
+    rrect(c, x + 22, top + 356, inner, 10, 5, fill=HexColor("#2a2a2a"))
+    rrect(c, x + 22, top + 356, inner * 0.7, 10, 5, fill=G)
+    disc(c, x + 22 + inner * 0.7, top + 361, 11, fill=G, border=WHITE, bw=3)
+    # generate
+    rrect(c, x + 22, top + 384, inner, 50, 12, fill=G)
+    txt(c, x + w / 2, top + 418, "Generate FreshMix", 28, BLACK, bold=True, center=True)
+    # song card (name / why / actions)
+    cy = top + 448
+    rrect(c, x + 22, cy, inner, 130, 14, fill=CARD2, border=HexColor("#262626"))
+    rrect(c, x + 38, cy + 16, 40, 40, 9, fill=G, alpha=0.25, border=G)
+    txt(c, x + 90, cy + 44, "New Discovery", 26, WHITE, bold=True)
+    txt(c, x + 38, cy + 80, "Why? similar mood + new artist", 26, G)
+    bwid = (inner - 32 - 24) / 3
+    for i, lbl in enumerate(["Save", "Skip", "Refresh"]):
+        bx = x + 38 + i * (bwid + 12)
+        rrect(c, bx, cy + 88, bwid, 36, 8, fill=HexColor("#252525"), border=HexColor("#333333"))
+        txt(c, bx + bwid / 2, cy + 113, lbl, 26, W70, bold=True, center=True)
 
 
 def main():
