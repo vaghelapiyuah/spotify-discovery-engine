@@ -192,11 +192,6 @@ def slide(c, F):
          "users want discovery that is low-risk, mood-aware, and fresh without "
          "becoming random.", 26, WHITE)
 
-    text(c, 80, 44, "Spotify Review Discovery Engine · all figures from live analysis",
-         26, GRAY)
-    text(c, W - 80, 44, APP_URL, 26, GREEN, right=True)
-    url_w = c.stringWidth(APP_URL, "Helvetica", 26)
-    c.linkURL(url, (W - 80 - url_w, 36, W - 80, 74), relative=0)
     c.showPage()
 
 
