@@ -147,3 +147,78 @@ UNMET_NEED_TO_OPPORTUNITY: dict[str, str] = {
     UnmetNeed.BETTER_RESET_REFRESH.value: "Taste reset / refresh option",
     UnmetNeed.NONE.value: "—",
 }
+
+
+# --- Discovery problem taxonomy: root causes (spec section 5) -----------------
+
+class RootCause(str, Enum):
+    RECOMMENDATION_FATIGUE = "recommendation_fatigue"
+    TASTE_BUBBLE = "taste_bubble"
+    LOW_TRUST = "low_trust"
+    HIGH_EFFORT = "high_effort"
+    CONTEXT_MISMATCH = "context_mismatch"
+    WEAK_FEEDBACK_CONTROL = "weak_feedback_control"
+    LACK_OF_NOVELTY_BALANCE = "lack_of_novelty_balance"
+    NONE = "none"
+
+
+# The single framing statement for the whole analysis (spec section 5).
+MAIN_PROBLEM = (
+    "Users repeat familiar music because discovery feels risky, repetitive, "
+    "or effortful."
+)
+
+ROOT_CAUSE_LABELS: dict[str, str] = {
+    RootCause.RECOMMENDATION_FATIGUE.value: "Recommendation fatigue",
+    RootCause.TASTE_BUBBLE.value: "Taste bubble",
+    RootCause.LOW_TRUST.value: "Low trust",
+    RootCause.HIGH_EFFORT.value: "High effort",
+    RootCause.CONTEXT_MISMATCH.value: "Context mismatch",
+    RootCause.WEAK_FEEDBACK_CONTROL.value: "Weak feedback control",
+    RootCause.LACK_OF_NOVELTY_BALANCE.value: "Lack of novelty balance",
+    RootCause.NONE.value: "—",
+}
+
+ROOT_CAUSE_EXPLANATIONS: dict[str, str] = {
+    RootCause.RECOMMENDATION_FATIGUE.value: "Users feel the same songs keep coming back.",
+    RootCause.TASTE_BUBBLE.value: "Spotify keeps users inside old listening habits.",
+    RootCause.LOW_TRUST.value: "Users are not confident new songs will be good.",
+    RootCause.HIGH_EFFORT.value: "Searching for new music takes time.",
+    RootCause.CONTEXT_MISMATCH.value: "Recommendations don't match user mood/activity.",
+    RootCause.WEAK_FEEDBACK_CONTROL.value: "Users cannot easily guide what they want.",
+    RootCause.LACK_OF_NOVELTY_BALANCE.value: "New songs are either too similar or too random.",
+    RootCause.NONE.value: "No discovery problem expressed.",
+}
+
+# Map an observed frustration to its underlying root cause.
+FRUSTRATION_TO_ROOTCAUSE: dict[str, str] = {
+    Frustration.SAME_SONGS_REPEATED.value: RootCause.RECOMMENDATION_FATIGUE.value,
+    Frustration.SAME_ARTISTS_REPEATED.value: RootCause.TASTE_BUBBLE.value,
+    Frustration.BAD_RECOMMENDATIONS.value: RootCause.LOW_TRUST.value,
+    Frustration.TOO_MANY_SKIPS.value: RootCause.HIGH_EFFORT.value,
+    Frustration.WRONG_MOOD.value: RootCause.CONTEXT_MISMATCH.value,
+    Frustration.OVER_PERSONALIZED_FEED.value: RootCause.TASTE_BUBBLE.value,
+    Frustration.POOR_CONTROL.value: RootCause.WEAK_FEEDBACK_CONTROL.value,
+    Frustration.HIDDEN_DISCOVERY.value: RootCause.HIGH_EFFORT.value,
+    Frustration.NONE.value: RootCause.NONE.value,
+}
+
+# Fallback when no explicit frustration: infer root cause from the topic cluster.
+TOPIC_TO_ROOTCAUSE: dict[str, str] = {
+    TopicCluster.REPETITIVE_RECOMMENDATIONS.value: RootCause.RECOMMENDATION_FATIGUE.value,
+    TopicCluster.WEAK_GENRE_EXPLORATION.value: RootCause.TASTE_BUBBLE.value,
+    TopicCluster.POOR_MOOD_UNDERSTANDING.value: RootCause.CONTEXT_MISMATCH.value,
+    TopicCluster.TOO_MUCH_EFFORT.value: RootCause.HIGH_EFFORT.value,
+    TopicCluster.DISCOVERY_FEELS_RISKY.value: RootCause.LOW_TRUST.value,
+    TopicCluster.PLAYLIST_FATIGUE.value: RootCause.RECOMMENDATION_FATIGUE.value,
+    TopicCluster.ALGORITHM_OVER_PERSONALIZATION.value: RootCause.TASTE_BUBBLE.value,
+    TopicCluster.OTHER.value: RootCause.NONE.value,
+}
+
+
+def root_cause_for(frustration: str, topic: str) -> str:
+    """Resolve a review's root cause: prefer frustration, fall back to topic."""
+    rc = FRUSTRATION_TO_ROOTCAUSE.get(frustration, RootCause.NONE.value)
+    if rc == RootCause.NONE.value:
+        rc = TOPIC_TO_ROOTCAUSE.get(topic, RootCause.NONE.value)
+    return rc

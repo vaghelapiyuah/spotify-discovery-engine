@@ -47,6 +47,24 @@ class Analyzer:
         self.workers = workers
         self.max_tokens = max_tokens
 
+    def validate(self) -> tuple[bool, str]:
+        """Cheap preflight: confirm the API key works. Returns (ok, message)."""
+        import anthropic
+
+        try:
+            self.client.messages.create(
+                model=self.model,
+                max_tokens=1,
+                messages=[{"role": "user", "content": "ping"}],
+            )
+            return True, "ok"
+        except anthropic.AuthenticationError:
+            return False, "Invalid ANTHROPIC_API_KEY."
+        except anthropic.NotFoundError:
+            return False, f"Model '{self.model}' not available for this key."
+        except Exception as e:  # network, rate limit, etc.
+            return False, f"{type(e).__name__}: {e}"
+
     # --- per-review analysis -------------------------------------------------
 
     def _analyze_one(self, review: CleanReview) -> AnalyzedReview:

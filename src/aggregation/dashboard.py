@@ -19,10 +19,15 @@ from ..models import AnalyzedReview
 from ..taxonomy import (
     BUSINESS_IMPACT,
     FRUSTRATION_LABELS,
+    MAIN_PROBLEM,
+    ROOT_CAUSE_EXPLANATIONS,
+    ROOT_CAUSE_LABELS,
     SEVERITY_WEIGHT,
     UNMET_NEED_TO_OPPORTUNITY,
     Frustration,
+    RootCause,
     UnmetNeed,
+    root_cause_for,
 )
 
 
@@ -143,6 +148,26 @@ def build_dashboard(analyzed: list[AnalyzedReview]) -> dict:
     for rank, row in enumerate(raw_scores):
         row["priority"] = _priority_from_rank(rank, len(raw_scores))
 
+    # --- Root-cause taxonomy (section 5) -------------------------------------
+    root_counts: Counter[str] = Counter()
+    for a in discovery:
+        rc = root_cause_for(
+            a.analysis.frustration.value, a.analysis.topic_cluster.value
+        )
+        if rc != RootCause.NONE.value:
+            root_counts[rc] += 1
+    n_rooted = sum(root_counts.values())
+    root_causes = [
+        {
+            "root_cause": ROOT_CAUSE_LABELS[rc],
+            "key": rc,
+            "count": c,
+            "pct": _pct(c, n_rooted),
+            "explanation": ROOT_CAUSE_EXPLANATIONS[rc],
+        }
+        for rc, c in root_counts.most_common()
+    ]
+
     # --- Distributions (supporting context) ----------------------------------
     distributions = {
         "topic_cluster": dict(
@@ -157,6 +182,7 @@ def build_dashboard(analyzed: list[AnalyzedReview]) -> dict:
     }
 
     return {
+        "main_problem": MAIN_PROBLEM,
         "totals": {
             "analyzed_reviews": total,
             "discovery_reviews": n_discovery,
@@ -166,6 +192,7 @@ def build_dashboard(analyzed: list[AnalyzedReview]) -> dict:
         "sentiment_by_source": sentiment_by_source,
         "discovery_issue_by_segment": discovery_issue_by_segment,
         "unmet_needs": unmet_needs,
+        "root_causes": root_causes,
         "opportunity_scores": raw_scores,
         "distributions": distributions,
     }
