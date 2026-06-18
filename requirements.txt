@@ -10,5 +10,10 @@ streamlit>=1.36
 scikit-learn>=1.4
 pandas>=2.0
 
+# Spreadsheet export (Excel + Google Sheets).
+openpyxl>=3.1
+gspread>=6.0
+google-auth>=2.30
+
 # Dev / offline tests (optional — tests also run with plain `python`).
 pytest>=8.0

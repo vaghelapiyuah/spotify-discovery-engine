@@ -9,7 +9,9 @@ Run locally:   streamlit run app.py
 from __future__ import annotations
 
 import json
+import os
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -108,6 +110,48 @@ def run_pipeline(raw: list[RawReview], analyzer) -> dict:
         "synthesis": synthesis,
         "themes": themes,
         "used_llm": isinstance(analyzer, Analyzer),
+    }
+
+
+def _gcp_creds() -> dict | None:
+    """Resolve Google service-account creds from Streamlit secrets or env."""
+    try:
+        if "gcp_service_account" in st.secrets:
+            return dict(st.secrets["gcp_service_account"])
+    except Exception:
+        pass
+    raw = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+    return json.loads(raw) if raw else None
+
+
+def _build_frames(R: dict, review_rows: list[dict]) -> dict:
+    """Ordered {tab_name: DataFrame} for spreadsheet export."""
+    dash, syn = R["dashboard"], R["synthesis"]
+    return {
+        "Reviews": pd.DataFrame(review_rows),
+        "Top Complaints": pd.DataFrame(dash["top_discovery_complaints"]),
+        "Root Causes": pd.DataFrame(dash["root_causes"]),
+        "Sentiment by Source": pd.DataFrame(
+            [{"source": s, **v} for s, v in dash["sentiment_by_source"].items()]
+        ),
+        "Segments": pd.DataFrame(
+            [{"segment": s, **v} for s, v in dash["discovery_issue_by_segment"].items()]
+        ),
+        "Unmet Needs": pd.DataFrame(dash["unmet_needs"]),
+        "Opportunity Scores": pd.DataFrame(dash["opportunity_scores"]),
+        "Themes": pd.DataFrame(
+            [{**t.to_dict(), "keywords": ", ".join(t.keywords),
+              "sample_summaries": " | ".join(t.sample_summaries)}
+             for t in R["themes"]]
+        ),
+        "PM Answers": pd.DataFrame(
+            [{"question": qa.question, "answer": qa.answer} for qa in syn.pm_answers]
+        ),
+        "Summary": pd.DataFrame([
+            {"field": "main_problem", "value": dash["main_problem"]},
+            {"field": "executive_summary", "value": syn.executive_summary},
+            {"field": "final_product_insight", "value": syn.final_product_insight},
+        ]),
     }
 
 
@@ -250,30 +294,31 @@ c3.metric("Discovery / Bug", f"{dash['totals']['discovery_reviews']} / "
 c4.metric("Cleaned out", R["dup"] + R["spam"])
 c5.metric("Engine", engine)
 
+review_rows = [
+    {
+        "source": a.review.raw.source.value,
+        "rating": a.review.raw.rating,
+        "sentiment": a.analysis.sentiment.value,
+        "frustration": a.analysis.frustration.value,
+        "segment": a.analysis.segment.value,
+        "topic": a.analysis.topic_cluster.value,
+        "intent": a.analysis.listening_intent.value,
+        "unmet_need": a.analysis.unmet_need.value,
+        "app_bug": a.analysis.is_app_bug,
+        "summary": a.analysis.normalized_summary,
+    }
+    for a in analyzed
+]
+
 tabs = st.tabs(
     ["📋 Reviews", "🧠 Classification", "🧩 Themes", "👥 Segments",
-     "🧭 Root Causes", "💬 RAG Q&A", "📊 Insights"]
+     "🧭 Root Causes", "💬 RAG Q&A", "📊 Insights", "⬇ Export"]
 )
 
 # --- 1. Reviews -------------------------------------------------------------
 with tabs[0]:
     st.subheader("Reviews + AI classification")
-    rows = [
-        {
-            "source": a.review.raw.source.value,
-            "rating": a.review.raw.rating,
-            "sentiment": a.analysis.sentiment.value,
-            "frustration": a.analysis.frustration.value,
-            "segment": a.analysis.segment.value,
-            "topic": a.analysis.topic_cluster.value,
-            "intent": a.analysis.listening_intent.value,
-            "unmet_need": a.analysis.unmet_need.value,
-            "app_bug": a.analysis.is_app_bug,
-            "summary": a.analysis.normalized_summary,
-        }
-        for a in analyzed
-    ]
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(review_rows)
     f1, f2 = st.columns(2)
     sources = f1.multiselect("Filter source", sorted(df["source"].unique()))
     frus = f2.multiselect("Filter frustration", sorted(df["frustration"].unique()))
@@ -429,3 +474,56 @@ with tabs[6]:
         file_name="discovery_report.json",
         mime="application/json",
     )
+
+# --- 8. Export --------------------------------------------------------------
+with tabs[7]:
+    st.subheader("Export for analysis")
+    frames = _build_frames(R, review_rows)
+    st.caption(
+        "One tab per table: Reviews, Top Complaints, Root Causes, Sentiment by "
+        "Source, Segments, Unmet Needs, Opportunity Scores, Themes, PM Answers, "
+        "Summary."
+    )
+
+    # Zero-setup spreadsheet.
+    from src.export import to_excel_bytes
+    st.download_button(
+        "⬇ Download Excel workbook (.xlsx)",
+        data=to_excel_bytes(frames),
+        file_name=f"spotify_discovery_{datetime.now():%Y%m%d}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type="primary",
+    )
+
+    st.divider()
+    st.markdown("#### Create a Google Sheet")
+    creds = _gcp_creds()
+    if not creds:
+        st.info(
+            "To create a live Google Sheet, add a Google service account "
+            "(free): enable the **Google Sheets API** + **Google Drive API**, "
+            "create a service-account JSON key, then add it to the app — as a "
+            "Streamlit secret `[gcp_service_account]` (the JSON fields) or env "
+            "`GOOGLE_SERVICE_ACCOUNT_JSON`. Until then, use the Excel export above."
+        )
+    else:
+        email = st.text_input(
+            "Share the sheet with (your Google email)",
+            value=os.getenv("GOOGLE_SHARE_EMAIL", ""),
+            placeholder="you@gmail.com",
+        )
+        if st.button("📄 Create Google Sheet"):
+            try:
+                from src.export import export_to_google_sheet
+                with st.spinner("Creating Google Sheet..."):
+                    url = export_to_google_sheet(
+                        frames, creds,
+                        title=f"Spotify Discovery Analysis {datetime.now():%Y-%m-%d %H:%M}",
+                        share_email=email or None,
+                    )
+                st.success("Google Sheet created.")
+                st.markdown(f"**[Open the Google Sheet ↗]({url})**")
+                if not email:
+                    st.caption("Tip: enter your email above so it's shared to your Drive.")
+            except Exception as e:
+                st.error(f"Could not create sheet: {e}")
