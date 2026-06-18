@@ -50,9 +50,12 @@ class Pipeline:
         # 1. Collect ----------------------------------------------------------
         raw = []
         for c in collectors:
-            collected = c.collect()
-            self.log(f"  collected {len(collected):>4} from {type(c).__name__}")
-            raw.extend(collected)
+            try:
+                collected = c.collect()
+                self.log(f"  collected {len(collected):>4} from {type(c).__name__}")
+                raw.extend(collected)
+            except Exception as e:  # missing creds / network — skip that source
+                self.log(f"  skipped {type(c).__name__}: {e}")
         self.log(f"Collected {len(raw)} raw reviews.")
 
         # 2. Clean ------------------------------------------------------------

@@ -29,26 +29,40 @@ from src.analysis import RuleBasedAnalyzer
 from src.collectors import (
     AppStoreCollector,
     Collector,
+    CommunityForumCollector,
     FileCollector,
     PlayStoreCollector,
+    RedditCollector,
+    SocialMediaCollector,
 )
 from src.pipeline import Pipeline, PipelineResult, save_result
 
 
 def _build_collectors(args) -> list[Collector]:
     countries = [c.strip() for c in args.country.split(",") if c.strip()]
+    appstore = lambda: AppStoreCollector(countries=countries, max_pages=args.pages)
+    playstore = lambda: PlayStoreCollector(
+        lang=args.lang, country=countries[0], count=args.count
+    )
     if args.source == "file":
         return [FileCollector(args.input)]
     if args.source == "appstore":
-        return [AppStoreCollector(countries=countries, max_pages=args.pages)]
+        return [appstore()]
     if args.source == "playstore":
-        return [
-            PlayStoreCollector(lang=args.lang, country=countries[0], count=args.count)
-        ]
+        return [playstore()]
+    if args.source == "reddit":
+        return [RedditCollector()]
+    if args.source == "community":
+        return [CommunityForumCollector()]
+    if args.source == "social":
+        return [SocialMediaCollector()]
     if args.source == "both":
+        return [appstore(), playstore()]
+    if args.source == "all":
+        # Sources without credentials are skipped automatically by the pipeline.
         return [
-            AppStoreCollector(countries=countries, max_pages=args.pages),
-            PlayStoreCollector(lang=args.lang, country=countries[0], count=args.count),
+            appstore(), playstore(), RedditCollector(),
+            CommunityForumCollector(), SocialMediaCollector(),
         ]
     raise ValueError(f"Unknown source: {args.source}")
 
@@ -129,8 +143,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Spotify Review Discovery Engine")
     parser.add_argument(
         "--source", default="file",
-        choices=["file", "appstore", "playstore", "both"],
-        help="Where to get reviews (default: file).",
+        choices=["file", "appstore", "playstore", "reddit", "community",
+                 "social", "both", "all"],
+        help="Where to get reviews (default: file). 'all' tries every source "
+             "and skips those without credentials.",
     )
     parser.add_argument(
         "--input", default="data/sample_reviews.json",

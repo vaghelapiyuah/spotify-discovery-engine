@@ -20,7 +20,14 @@ from src.aggregation import build_dashboard
 from src.analysis import Analyzer, RuleBasedAnalyzer
 from src.cleaning import Cleaner
 from src.clustering import ThemeClusterer
-from src.collectors import AppStoreCollector, FileCollector, PlayStoreCollector
+from src.collectors import (
+    AppStoreCollector,
+    CommunityForumCollector,
+    FileCollector,
+    PlayStoreCollector,
+    RedditCollector,
+    SocialMediaCollector,
+)
 from src.models import RawReview
 
 st.set_page_config(page_title="Spotify Discovery Engine", page_icon="🎧", layout="wide")
@@ -57,6 +64,24 @@ def _load_raw(source: str, **kw) -> list[RawReview]:
             lang=kw.get("lang", "en"),
             count=kw.get("count", 150),
         ).collect()
+    if source == "Live: Reddit (needs key)":
+        return RedditCollector().collect()
+    if source == "Live: Social / YouTube (needs key)":
+        return SocialMediaCollector().collect()
+    if source == "All available (live)":
+        raw: list[RawReview] = []
+        for c in (
+            AppStoreCollector(countries=[kw.get("country", "us")], max_pages=2),
+            PlayStoreCollector(country=kw.get("country", "us"), count=100),
+            RedditCollector(),
+            CommunityForumCollector(),
+            SocialMediaCollector(),
+        ):
+            try:
+                raw.extend(c.collect())
+            except Exception:
+                pass  # skip sources without credentials
+        return raw
     if source == "Upload JSON":
         records = json.loads(kw["uploaded"].decode("utf-8"))
         for i, r in enumerate(records):
@@ -118,7 +143,11 @@ if (DATA_DIR / "spotify_live.json").exists():
     source_options.append("Saved: App Store (data/spotify_live.json)")
 if (DATA_DIR / "spotify_play.json").exists():
     source_options.append("Saved: Play Store (data/spotify_play.json)")
-source_options += ["Live: App Store", "Live: Play Store", "Upload JSON"]
+source_options += [
+    "Live: App Store", "Live: Play Store",
+    "Live: Reddit (needs key)", "Live: Social / YouTube (needs key)",
+    "All available (live)", "Upload JSON",
+]
 
 source = st.sidebar.selectbox("Data source", source_options)
 

@@ -12,8 +12,11 @@ All return RawReview objects, so the rest of the pipeline is source-agnostic.
 
 from __future__ import annotations
 
+import base64
 import json
+import os
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from ..models import RawReview, Source
@@ -157,37 +160,162 @@ class PlayStoreCollector(Collector):
         return out
 
 
-# --- Stubs (not yet implemented) ---------------------------------------------
+# --- Reddit (official API; anonymous JSON is blocked by Reddit) --------------
 
 
 class RedditCollector(Collector):
-    """Reddit posts/comments from music/Spotify communities via PRAW."""
+    """Reddit posts from music/Spotify communities via the official OAuth API.
 
-    def __init__(self, subreddits: list[str] | None = None, query: str = "discover"):
-        self.subreddits = subreddits or ["spotify", "Music", "truespotify"]
+    Reddit blocks anonymous JSON access (HTTP 403), so this needs free app
+    credentials. Create a "script" or "web" app at
+    https://www.reddit.com/prefs/apps and set:
+        REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET
+    """
+
+    def __init__(
+        self,
+        subreddits: list[str] | None = None,
+        query: str = "discover OR recommendations OR discover weekly",
+        limit: int = 100,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+    ):
+        self.subreddits = subreddits or ["spotify", "truespotify", "Music"]
         self.query = query
+        self.limit = limit
+        self.client_id = client_id or os.getenv("REDDIT_CLIENT_ID")
+        self.client_secret = client_secret or os.getenv("REDDIT_CLIENT_SECRET")
+
+    def _token(self) -> str:
+        auth = base64.b64encode(
+            f"{self.client_id}:{self.client_secret}".encode()
+        ).decode()
+        data = urllib.parse.urlencode({"grant_type": "client_credentials"}).encode()
+        req = urllib.request.Request(
+            "https://www.reddit.com/api/v1/access_token",
+            data=data,
+            headers={"Authorization": f"Basic {auth}", "User-Agent": _USER_AGENT},
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read().decode("utf-8"))["access_token"]
 
     def collect(self) -> list[RawReview]:
-        raise NotImplementedError(
-            "RedditCollector is a stub. Implement against PRAW (Reddit API)."
+        if not (self.client_id and self.client_secret):
+            raise RuntimeError(
+                "Reddit needs API credentials (anonymous access is blocked). "
+                "Create an app at https://www.reddit.com/prefs/apps and set "
+                "REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET."
+            )
+        token = self._token()
+        subs = "+".join(self.subreddits)
+        params = urllib.parse.urlencode(
+            {"q": self.query, "restrict_sr": "1", "sort": "new",
+             "limit": str(self.limit), "t": "year"}
         )
+        url = f"https://oauth.reddit.com/r/{subs}/search?{params}"
+        req = urllib.request.Request(
+            url, headers={"Authorization": f"bearer {token}", "User-Agent": _USER_AGENT}
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        out: list[RawReview] = []
+        for child in data.get("data", {}).get("children", []):
+            d = child.get("data", {})
+            text = f"{d.get('title','')}. {d.get('selftext','')}".strip(". ").strip()
+            if not text:
+                continue
+            out.append(
+                RawReview(
+                    id=f"reddit-{d.get('id','')}",
+                    source=Source.REDDIT,
+                    text=text,
+                    date=None,
+                    country=None,
+                )
+            )
+        return out
 
 
 class CommunityForumCollector(Collector):
-    """Spotify Community forum feature requests / bug reports."""
+    """Spotify Community forum (Khoros/Lithium).
+
+    The Khoros community API is auth-gated and HTML scraping is brittle/often
+    blocked, so this stays a stub: provide community export JSON via FileCollector,
+    or implement against the Khoros LiQL API with a community API key.
+    """
 
     def collect(self) -> list[RawReview]:
-        raise NotImplementedError(
-            "CommunityForumCollector is a stub. Implement against the Spotify "
-            "Community (Khoros/Lithium) API or HTML scraping."
+        raise RuntimeError(
+            "Spotify Community needs Khoros API access (no free anonymous API). "
+            "Export posts to JSON and load via FileCollector, or wire the Khoros "
+            "LiQL API here."
         )
 
 
 class SocialMediaCollector(Collector):
-    """Tweets/X, Instagram/TikTok, YouTube comments mentioning Spotify discovery."""
+    """Social media via the YouTube Data API (comments on Spotify videos).
+
+    Free key: https://console.cloud.google.com -> enable YouTube Data API v3.
+    Set YOUTUBE_API_KEY. (X/Twitter and TikTok require paid/restricted APIs.)
+    """
+
+    def __init__(
+        self,
+        query: str = "spotify discover weekly recommendations",
+        max_videos: int = 8,
+        per_video: int = 50,
+        api_key: str | None = None,
+    ):
+        self.query = query
+        self.max_videos = max_videos
+        self.per_video = per_video
+        self.api_key = api_key or os.getenv("YOUTUBE_API_KEY")
+
+    def _get(self, url: str) -> dict:
+        req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read().decode("utf-8"))
 
     def collect(self) -> list[RawReview]:
-        raise NotImplementedError(
-            "SocialMediaCollector is a stub. Implement against the relevant "
-            "platform APIs (X API, YouTube Data API, etc.)."
+        if not self.api_key:
+            raise RuntimeError(
+                "Social media (YouTube) needs YOUTUBE_API_KEY. Enable the "
+                "YouTube Data API v3 in Google Cloud and set the key. "
+                "(X/Twitter and TikTok require paid APIs.)"
+            )
+        base = "https://www.googleapis.com/youtube/v3"
+        search_url = (
+            f"{base}/search?part=snippet&type=video&maxResults={self.max_videos}"
+            f"&q={urllib.parse.quote(self.query)}&key={self.api_key}"
         )
+        video_ids = [
+            it["id"]["videoId"]
+            for it in self._get(search_url).get("items", [])
+            if it.get("id", {}).get("videoId")
+        ]
+
+        out: list[RawReview] = []
+        for vid in video_ids:
+            c_url = (
+                f"{base}/commentThreads?part=snippet&videoId={vid}"
+                f"&maxResults={self.per_video}&textFormat=plainText&key={self.api_key}"
+            )
+            try:
+                items = self._get(c_url).get("items", [])
+            except urllib.error.HTTPError:
+                continue  # comments disabled, etc.
+            for it in items:
+                sn = it["snippet"]["topLevelComment"]["snippet"]
+                text = (sn.get("textDisplay") or "").strip()
+                if not text:
+                    continue
+                out.append(
+                    RawReview(
+                        id=f"youtube-{it['id']}",
+                        source=Source.SOCIAL_MEDIA,
+                        text=text,
+                        date=(sn.get("publishedAt") or "")[:10] or None,
+                    )
+                )
+        return out
