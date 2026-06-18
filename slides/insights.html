@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spotify Discovery — Review Intelligence</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .slide{width:100%;max-width:1180px;background:#121212;border-radius:18px;border-top:8px solid #1DB954;padding:34px 40px}
+  .title{font-size:34px;font-weight:600;letter-spacing:-0.6px}
+  .sub{color:#b3b3b3;font-size:16px;margin-top:6px}
+  .kpis{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+  .kpi{background:#181818;border-radius:12px;padding:12px 18px}
+  .kpi b{color:#1DB954;font-size:28px;font-weight:600}
+  .kpi span{display:block;color:#b3b3b3;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:34px;margin-top:26px}
+  .h{color:#1DB954;font-weight:600;font-size:18px;margin-bottom:14px}
+  .theme{margin-bottom:16px}
+  .theme .row{display:flex;justify-content:space-between;gap:10px}
+  .theme .nm{font-weight:500;font-size:16px}
+  .theme .pc{color:#1DB954;font-weight:600;font-size:16px;white-space:nowrap}
+  .track{background:#333;border-radius:7px;height:12px;margin-top:7px;overflow:hidden}
+  .bar{width:0;height:12px;background:#1DB954;border-radius:7px;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+  .theme .sub{color:#b3b3b3;font-size:14px;margin-top:5px}
+  .qa{border-bottom:.5px solid #2a2a2a}
+  .qh{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;cursor:pointer;padding:13px 0;font-weight:500;font-size:16px}
+  .chev{color:#1DB954;font-size:22px;flex:none}
+  .body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+  .body div{color:#b3b3b3;font-size:15px;padding:0 0 13px}
+  .prio{border-top:.5px solid #2a2a2a;margin-top:22px;padding-top:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .chip{font-size:14px;padding:7px 14px;border-radius:16px;background:#2a2a2a;color:#e6e6e6}
+  .chip.hot{background:#1DB954;color:#06381c;font-weight:500}
+  .insight{margin-top:14px;font-size:16px}
+  .insight b{color:#1DB954;font-weight:600}
+  .cta{display:inline-block;margin-top:20px;background:#1DB954;color:#06381c;font-weight:600;font-size:15px;text-decoration:none;padding:12px 22px;border-radius:24px}
+  .foot{margin-top:18px;color:#777;font-size:13px}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="title">Users want freshness — without losing familiarity</div>
+  <div class="sub">Live analysis of 186 real Spotify reviews · App Store 50 + Play Store 136</div>
+  <div class="kpis">
+    <div class="kpi"><b class="cu" data-to="62.9" data-suf="%">0</b><span>positive</span></div>
+    <div class="kpi"><b class="cu" data-to="25.8" data-suf="%">0</b><span>negative</span></div>
+    <div class="kpi"><b class="cu" data-to="10.1" data-suf="%">0</b><span>say recs are "bad" (#1)</span></div>
+    <div class="kpi"><b class="cu" data-to="108">0</b><span>P0 opportunity score</span></div>
+  </div>
+  <div class="grid">
+    <div><div class="h">Top insight themes</div><div id="themes"></div></div>
+    <div><div class="h">What the reviews answer <span style="color:#777;font-weight:400;font-size:14px">· click a question</span></div><div id="questions"></div></div>
+  </div>
+  <div class="prio" id="prio"></div>
+  <div class="insight"><b>Final insight: </b>users want discovery that is low-risk, mood-aware, and fresh without becoming random.</div>
+  <a class="cta" href="https://spotify-discovery-engine-cgdz6f8vcaxrmskv6gbtze.streamlit.app/" target="_blank" rel="noopener">Open the live dashboard →</a>
+  <div class="foot">Spotify Review Discovery Engine · all figures from live analysis</div>
+</div>
+<script>
+var themes=[
+ ["1. Recommendations feel repetitive","11.2% (20)",100,"Same songs / artists loop back"],
+ ["2. Recommendations sometimes feel random","10.1% (18)",90,"#1 frustration: bad recommendations"],
+ ["3. Want mood / activity-based discovery","2.8% (5)",25,"Context mismatch = 16% of root causes"],
+ ["4. Want control over freshness","7.8% (14)",70,"Steer how new vs. familiar it feels"],
+ ["5. Want explanation and trust","10.1% (18)",90,"Low trust = 58% of root causes"]
+];
+var tc=document.getElementById('themes');
+themes.forEach(function(t){var d=document.createElement('div');d.className='theme';
+ d.innerHTML='<div class="row"><span class="nm">'+t[0]+'</span><span class="pc">'+t[1]+'</span></div>'+
+  '<div class="track"><div class="bar" data-w="'+t[2]+'"></div></div><div class="sub">'+t[3]+'</div>';tc.appendChild(d);});
+var qs=[
+ ["Why do users struggle to discover new music?","Low trust = 58% of root causes; ‘bad recs’ is the #1 frustration (10.1%). Discovery feels risky, not impossible."],
+ ["Most common frustrations with recommendations?","Bad recs 10.1% · Wrong mood 2.8% · Same songs 2.2% · Same artists 2.2% (P0 score 108)."],
+ ["What listening behaviors are users trying to achieve?","Similar-but-fresh 5.6% · Mood-based 2.8% · Deep discovery 2.2% — situational, not just ‘new music’."],
+ ["What causes repeat listening of the same content?","Low trust 58% + fatigue 13% + taste bubble 13% — familiar feels safer than a risky new pick."],
+ ["Which segments face different discovery challenges?","Playlist loyalists (12) → fatigue · Passive (6) → risky · Mood (5) → wrong mood · Genre explorers (4) → shallow."],
+ ["What unmet needs emerge consistently?","Less-repetitive playlists 6.7% · Fresh-but-familiar 5.6% · Mood-aware 2.8% · Better control 2.2%."]
+];
+var qc=document.getElementById('questions');
+qs.forEach(function(q,i){var w=document.createElement('div');w.className='qa';
+ w.innerHTML='<button class="qh"><span>Q'+(i+1)+'. '+q[0]+'</span><span class="chev">+</span></button>'+
+  '<div class="body"><div>'+q[1]+'</div></div>';qc.appendChild(w);});
+var prio=[["P0","Bad recommendations","108"],["P1","Same songs","36"],["P2","Wrong mood","30"],["P3","Same artists","16"]];
+document.getElementById('prio').innerHTML='<span style="color:#1DB954;font-weight:600;font-size:14px">Act first:</span>'+
+ prio.map(function(p){return '<span class="chip'+(p[0]==='P0'?' hot':'')+'">'+p[0]+' '+p[1]+' · '+p[2]+'</span>';}).join('');
+function run(){
+ document.querySelectorAll('.bar').forEach(function(b){b.style.width=b.getAttribute('data-w')+'%';});
+ document.querySelectorAll('.cu').forEach(function(el){var to=parseFloat(el.getAttribute('data-to')),suf=el.getAttribute('data-suf')||'',dec=to%1!==0,t0=null;
+  function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/900,1),v=to*(1-Math.pow(1-p,3));el.textContent=(dec?v.toFixed(1):Math.round(v))+suf;if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);});
+ document.querySelectorAll('.qa').forEach(function(w){var btn=w.querySelector('.qh'),body=w.querySelector('.body'),chev=w.querySelector('.chev');
+  btn.addEventListener('click',function(){var open=body.style.maxHeight&&body.style.maxHeight!=='0px';body.style.maxHeight=open?'0':body.scrollHeight+'px';chev.textContent=open?'+':'−';});});
+ var fb=document.querySelector('.qa .body'),fc=document.querySelector('.qa .chev');if(fb){fb.style.maxHeight=fb.scrollHeight+'px';if(fc)fc.textContent='−';}
+}
+requestAnimationFrame(function(){requestAnimationFrame(run);});
+</script>
+</body>
+</html>
