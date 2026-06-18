@@ -131,21 +131,32 @@ def slide_themes(c, F):
 
     # theme bars
     maxpct = max(t[2] for t in F["themes"]) or 1
-    top = H - 430
-    row_h = 110
+    top = H - 415
+    row_h = 100
     bar_x, bar_w = 900, 760
     for i, (label, n, pct, sub) in enumerate(F["themes"]):
         y = top - i * row_h
-        text(c, 80, y - 34, f"{i+1}. {label}", 30, WHITE, bold=True)
-        text(c, 80, y - 70, sub, 26, GRAY)
-        # bar track + fill
+        text(c, 80, y - 32, f"{i+1}. {label}", 30, WHITE, bold=True)
+        text(c, 80, y - 66, sub, 26, GRAY)
         c.setFillColor(DARKGRAY)
-        c.roundRect(bar_x, y - 64, bar_w, 44, 10, fill=1, stroke=0)
+        c.roundRect(bar_x, y - 60, bar_w, 42, 10, fill=1, stroke=0)
         c.setFillColor(GREEN)
-        c.roundRect(bar_x, y - 64, max(40, bar_w * pct / maxpct), 44, 10, fill=1, stroke=0)
-        text(c, bar_x + bar_w + 24, y - 56, f"{pct}%  ({n})", 30, WHITE, bold=True)
+        c.roundRect(bar_x, y - 60, max(40, bar_w * pct / maxpct), 42, 10, fill=1, stroke=0)
+        text(c, bar_x + bar_w + 24, y - 52, f"{pct}%  ({n})", 30, WHITE, bold=True)
 
-    footer(c, "Slide 3 · Review intelligence")
+    # act-first prioritization strip
+    c.setStrokeColor(DARKGRAY)
+    c.setLineWidth(1)
+    c.line(80, 168, W - 80, 168)
+    text(c, 80, 130, "Act first — opportunity score (Frequency × Severity × Impact)",
+         27, GREEN, bold=True)
+    parts = "   ·   ".join(
+        f"{r['priority']} {r['frustration']} ({r['opportunity_score']:.0f})"
+        for r in F["dash"]["opportunity_scores"]
+    )
+    text(c, 80, 92, parts, 26, WHITE)
+
+    footer(c, "Slide 1 · Review intelligence")
     c.showPage()
 
 
@@ -176,59 +187,31 @@ def slide_questions(c, F):
     ]
     col_w, gap = 870, 40
     x0 = 80
-    top = H - 230
-    card_h = 230
+    top = H - 205
+    card_h = 196
     for i, (q, a) in enumerate(qa):
         col = i % 2
         row = i // 2
         x = x0 + col * (col_w + gap)
-        y = top - row * (card_h + 24)
+        y = top - row * (card_h + 20)
         c.setFillColor(CARD)
         c.roundRect(x, y - card_h, col_w, card_h, 16, fill=1, stroke=0)
-        text(c, x + 30, y - 52, f"Q{i+1}", 30, GREEN, bold=True)
-        _wrap(c, q, x + 30, y - 92, col_w - 60, 29, WHITE, bold=True, lead=34)
-        _wrap(c, a, x + 30, y - 150, col_w - 60, 26, GRAY, lead=32)
+        text(c, x + 30, y - 46, f"Q{i+1}", 28, GREEN, bold=True)
+        _wrap(c, q, x + 30, y - 84, col_w - 60, 28, WHITE, bold=True, lead=32)
+        _wrap(c, a, x + 30, y - 146, col_w - 60, 26, GRAY, lead=30)
 
-    footer(c, "6 PM questions · number-based")
-    c.showPage()
+    # what-to-build + final insight
+    c.setStrokeColor(DARKGRAY)
+    c.setLineWidth(1)
+    c.line(80, 168, W - 80, 168)
+    opps = " · ".join(o["product_opportunity"] for o in F["dash"]["unmet_needs"][:3])
+    text(c, 80, 130, "Build next:", 27, GREEN, bold=True)
+    text(c, 80 + c.stringWidth("Build next: ", "Helvetica-Bold", 27), 130, opps, 26, WHITE)
+    text(c, 80, 92,
+         "Final insight — users want discovery that is low-risk, mood-aware, and "
+         "fresh without becoming random.", 27, WHITE, bold=True)
 
-
-# --- slide 3: prioritization ------------------------------------------------ #
-def slide_priority(c, F):
-    page_bg(c)
-    text(c, 80, H - 120, "Where to act first — opportunity scoring", 60, WHITE, bold=True)
-    text(c, 80, H - 175, "Opportunity = Frequency × Severity × Business impact", 30, GRAY)
-
-    rows = F["dash"]["opportunity_scores"]
-    top = H - 260
-    rh = 96
-    for i, r in enumerate(rows):
-        y = top - i * rh
-        c.setFillColor(CARD)
-        c.roundRect(80, y - rh + 16, 1000, rh - 20, 12, fill=1, stroke=0)
-        c.setFillColor(GREEN if r["priority"] == "P0" else DARKGRAY)
-        c.roundRect(100, y - rh + 30, 90, rh - 48, 10, fill=1, stroke=0)
-        text(c, 145, y - rh + 52, r["priority"], 30, WHITE if r["priority"] == "P0" else GRAY, bold=True, center=True)
-        text(c, 220, y - rh + 52, r["frustration"], 30, WHITE, bold=True)
-        text(c, 1060, y - rh + 52, str(r["opportunity_score"]), 34, GREEN, bold=True, right=True)
-
-    # opportunities panel
-    px = 1140
-    c.setFillColor(CARD)
-    c.roundRect(px, H - 700, 700, 440, 16, fill=1, stroke=0)
-    text(c, px + 30, H - 320, "Top product opportunities", 32, WHITE, bold=True)
-    opps = F["dash"]["unmet_needs"][:4]
-    for i, o in enumerate(opps):
-        y = H - 380 - i * 80
-        text(c, px + 30, y, f"• {o['product_opportunity']}", 27, GREEN, bold=True)
-        text(c, px + 50, y - 32, f"{o['pct_of_feedback']}% of feedback ({o['count']})", 26, GRAY)
-
-    text(c, 80, 150,
-         "Final insight: users want discovery that is low-risk, mood-aware, and",
-         30, WHITE, bold=True)
-    text(c, 80, 110, "fresh enough to feel new — without becoming random.", 30, WHITE, bold=True)
-
-    footer(c, "Prioritization framework")
+    footer(c, "Slide 2 · 6 PM questions, number-based")
     c.showPage()
 
 
@@ -258,7 +241,6 @@ def main():
     c = canvas.Canvas(str(path), pagesize=(W, H))
     slide_themes(c, F)
     slide_questions(c, F)
-    slide_priority(c, F)
     c.save()
     print(f"Wrote {path}  ({path.stat().st_size} bytes)")
 
