@@ -115,6 +115,8 @@ def slide(c, F):
     c.setFillColor(GREEN)
     c.rect(0, H - 12, W, 12, fill=1, stroke=0)
 
+    url = "https://spotify-discovery-engine-cgdz6f8vcaxrmskv6gbtze.streamlit.app/"
+
     # Header
     text(c, 80, H - 84, "Users want freshness — without losing familiarity", 48, WHITE, bold=True)
     text(c, 80, H - 124,
@@ -122,6 +124,14 @@ def slide(c, F):
          f"Play Store {F['src'].get('play_store',0)} · {F['pos']}% positive · "
          f"{F['neg']}% negative · #1: bad recs 10.1% · P0 score 108",
          26, GRAY)
+
+    # Clickable CTA (interactive in any PDF viewer)
+    bw, bh, bx, by = 360, 46, W - 80 - 360, H - 102
+    c.setFillColor(GREEN)
+    c.roundRect(bx, by, bw, bh, 23, fill=1, stroke=0)
+    text(c, bx + bw / 2, by + 14, "Open live dashboard  ↗", 26,
+         Color(0.024, 0.22, 0.11), bold=True, center=True)
+    c.linkURL(url, (bx, by, bx + bw, by + bh), relative=0)
 
     # Left column — insight themes
     text(c, 80, H - 182, "Top insight themes", 28, GREEN, bold=True)
@@ -131,6 +141,7 @@ def slide(c, F):
         text(c, 80, y, f"{i+1}. {label}", 27, WHITE, bold=True)
         text(c, 870, y, f"{pct}%  ({n})", 27, GREEN, bold=True, right=True)
         text(c, 80, y - 32, sub, 26, GRAY)
+        c.linkURL(url, (80, y - 42, 870, y + 22), relative=0)
 
     # Right column — the 6 questions, number-based
     text(c, 920, H - 182, "What the reviews answer — by the numbers", 28, GREEN, bold=True)
@@ -159,6 +170,7 @@ def slide(c, F):
         y = qy - i * 100
         text(c, 920, y, f"Q{i+1}.  {q}", 26, WHITE, bold=True)
         _wrap(c, a, 920, y - 30, 940, 26, GRAY, lead=30)
+        c.linkURL(url, (920, y - 70, 1840, y + 20), relative=0)
 
     # Bottom band — prioritization + final insight
     c.setStrokeColor(DARKGRAY)
@@ -183,6 +195,8 @@ def slide(c, F):
     text(c, 80, 44, "Spotify Review Discovery Engine · all figures from live analysis",
          26, GRAY)
     text(c, W - 80, 44, APP_URL, 26, GREEN, right=True)
+    url_w = c.stringWidth(APP_URL, "Helvetica", 26)
+    c.linkURL(url, (W - 80 - url_w, 36, W - 80, 74), relative=0)
     c.showPage()
 
 
